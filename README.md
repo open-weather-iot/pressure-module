@@ -1,105 +1,29 @@
-# TEMPLATE DE MÓDULO
-Esse repositório é um template para um módulo de sensor.
+# MÓDULO DE PRESSÃO ATMOSFÉRICA
 
-## Utilizando esse template
-Para criar um novo módulo, siga os seguintes passos:
-- Crie um repositório no GitHub nesta organização (`open-weather-iot`)
-- Selecione o template `template-module`
-<img src="img/template-picker.png">
+O módulo de pressão atmosférica faz parte do projeto de estação meteorológica no âmbito da disciplina de Laboratorio Experimental de Campus Inteligente (IE321K - 2S2022).
 
-- Dê um nome no formato `{sensor}-module`. Exemplo: `temperature-module`
-<img src="img/repo-name.png">
+O sensor utilizado é o [BME680](https://br.mouser.com/datasheet/2/783/BST_BME680_DS001-1509608.pdf) que além da pressão atmosférica, realiza medição de outras grandezas como temperatura, umidade relativa do ar, altitude e qualidade do ar.
 
-- Não é necessário escrever uma descrição
-- Deixe o projeto público. **Não faça upload de nenhum arquivo com informações sensíveis**
-<img src="img/visibility.png">
+## Protótipo
 
-Após a inicialização do repositório:
-- Reescreva o arquivo README.md com a descrição do projeto, incluindo o que é, informações necessárias, detalhes de execução e o restante que julgar pertinente.
-- Inclua os arquivos necessários nas pastas descritas em na seção seguinte ([Organização de pastas e arquivos](#organizacao))
+Foi realizado um protótipo inicial para avaliar as medições do sensor e dinâmica de funcionamento do software.
 
-## Organização de pastas e arquivos <a id="organizacao"></a>
-- `altium/`: arquivos do Altium
-- `documents/`: especificações e PDFs utilizados para o desenvolvimento do sub-projeto
-- `gerber_files/`: export de arquivos Gerber
-- `img/`: imagens utilizadas na descrição do README.md
-- `src/`: diretório do código-fonte. Todo código deverá ser colocado aqui, exceto quando é utilizado exclusivamente para testes
-  - `example.py`: módulo de sensor exemplo
-- `test/`: diretório com os arquivos para execução de testes
-  - `main.py`: arquivo principal da rotina de execução de testes. Importa as classes e funções do diretório do código-fonte (`src/`)
-- `util/`: códigos comuns utilizados por vários módulos de sensores ("utilitários").
-  - `bus.py`: utilitário de barramentos SPI, Serial e I2C
+![Skematics](./img/proto-skematic.png)
 
-Os arquivos `.gitkeep` existem nas pastas vazias para que elas sejam reconhecidas pelo git e incluídas no template. Após popular seu conteúdo, esses arquivos devem ser removidos.
+Para o circuito foram utilizados os seguintes componentes:
 
-## Base para uma classe de sensor
-A base para um sensor é uma classe, a qual obedece aos seguintes métodos (funções):
-- `__init__(self, *, ...)`: o construtor da classe deve receber os parâmetros nomeados necessários e o barramento utilizado (seja SPI, Serial ou I2C)
-- `setup(self)` (**opcional**): contém as rotinas de inicialização do módulo do sensor, caso necessário
-- `read(self)` (**obrigatório**): retorna um dicionário com as seguintes chaves:
-  - `raw`: contém um dicionário com os valores puros que foram lidos do sensor que se está trabalhando
-  - `value`: representa o valor final após conversão de unidades para ser apresentado diretamente ao usuário
-  - `unit`: unidade de medida do campo `value`. Exemplo: `'Celsius'`
+* RaspberryPi Pico 
+* Módulo sensor BME680
+* 1 Tela (_Display_ OLED 128x32)
+* 1 LED RGB
+* 1 Botão (_Push button_)
 
-```py
-class Example:
-    # deve receber os parâmetros nomeados necessários e o barramento utilizado (seja SPI, Serial ou I2C)
-    def __init__(self, i2c_bus):
-        self.i2c_bus = i2c_bus
-        # ...
+**Funcionamento:** O LED RGB informa a cor verde indicando funcionamento normal do sistema. A cada leitura do sensor e pressionamento do botão, o LED pisca.
+O botão serve para alternar a exibição na tela das 5 grandezas exibidas pelo sensor, sendo que inicialmente é exibido primeiro o valor de pressão atmosférica.
+As medições ocorrem a cada 10 segundos. Caso ocorra algum erro com a leitura I2C do sensor, o LED vai alternar para vermelho, piscando a cada 5 segundos. Ao restabelecer a conexão I2C, retorna ao estado normal (verde).
 
-    # método **OPCIONAL** da classe que realiza a inicialização do sensor
-    def setup(self):
-        pass
 
-    # método **OBRIGATÓRIO** da classe que realiza leituras do sensor
-    def read(self):
-        return { 'raw': {}, 'value': 0.0, 'unit': '' }
 
-```
-
-## Utilitários
-Alguns utilitários básicos são definidos na pasta `util/`.
-
-### `bus.py`
-Utilitário de barramentos SPI, Serial e I2C.
-
-A classe respectiva para o barramento SPI obedece à seguinte especificação:
-- construtor `SPI(port)`:
-- `select()`: ativa o dispositivo SPI
-- `deselect()`: desativa o dispositivo SPI
-- `read(nbytes, *, auto_select=False)`: lê a quantidade `nbytes` de bytes do dispositivo SPI. Retorna um objeto `bytes` com o dado que foi lido.
-- `write(buf, *, auto_select=False)`: Escreve os bytes contidos em `buf`. Retorna `None`.
-- `_spi`: Atributo utilizado internamente que armazena a instância `machine.SPI`. Não é recomendável utilizar diretamente esse atributo, exceto nos casos de bibliotecas de componentes que recebem uma instância `machine.SPI`.
-- `_cs_pin`: Atributo utilizado internamente que armazena o número do pino de *chip select*. Não é recomendável utilizar diretamente esse atributo, exceto nos casos de bibliotecas de componentes que recebem o número do pino de *chip select*.
-- `_cs`: Atributo utilizado internamente que armazena a instância `machine.Pin` (*output*) do *chip select*. Não é recomendável utilizar diretamente esse atributo, exceto nos casos de bibliotecas de componentes que recebem uma instância `machine.Pin`.
-
-#### Exemplo
-```py
-from util.bus import SPI
-from xyz42 import XYZ42_SPI
-
-spi = SPI(port=1)
-
-# (1) ativa o dispositivo SPI, (2) escreve os bytes 12345678, (3) desativa o dispositivo SPI
-spi.select()
-spi.write(b'12345678')
-spi.deselect()
-
-# escreve os bytes 12345678 (automaticamente ativa e desativa o dispositivo para esse comando específico)
-spi.write(b'12345678', auto_select=True)
-
-# lê 5 bytes (automaticamente ativa e desativa)
-reading_5 = spi.read(5, auto_select=True)
-
-with spi: # ativa e desativa o dispositivo SPI automaticamente dentro desse contexto/bloco
-    spi.write(b'12345678')
-    MSB = spi.read(1)
-    LSB = spi.read(1)
-
-# expondo para o módulo hipotético XYZ42 a instância interna `machine.SPI` e o `machine.Pin` do chip select
-xyz = XYZ42_SPI(spi=spi._spi, cs=spi._cs)
-```
 
 ## Orientações gerais
 ### Import
