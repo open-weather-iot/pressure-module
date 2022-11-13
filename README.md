@@ -26,20 +26,6 @@ As medições ocorrem a cada 10 segundos. Caso ocorra algum erro com a leitura I
 
 
 ## Orientações gerais
-### Import
-Não importe módulos inteiros.
-
-> ❌
-> ```py
-> from example import *
-> ```
-
-> ✅
-> ```py
-> from example import Example
-> ```
-
----
 
 ### Variáveis e instruções globais
 Evite utilizar variáveis e instruções globais para prover uma melhor modularização do código.
@@ -100,23 +86,6 @@ Evite utilizar variáveis e instruções globais para prover uma melhor modulari
 >     while True:
 >         led.toggle()
 >         sleep_ms(interval)
-> ```
-
----
-
-### Identação
-Tome cuidado para identar o código com **4 espaços**.
-
-> ❌ Exemplo: 3 espaços
-> ```py
-> def test():
->    return 42
-> ```
-
-> ✅
-> ```py
-> def test():
->     return 42
 > ```
 
 ---
