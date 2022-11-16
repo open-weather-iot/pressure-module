@@ -56,6 +56,7 @@ state = -1
 disp_prob = 0
 relogio_bme = ticks_ms()
 relogio_led = ticks_ms()
+button_time = ticks_ms()
 
 f_temperature = ''
 f_humidity = ''
@@ -79,9 +80,9 @@ def toggle_RGB(led_value):
 def check_device_alert(device_id):
     if device_id == 60:
         blink_alert()
-#     elif end == 119:
-#         led_R.off()
-#         led_G.on()
+    elif end == 119:
+        led_R.off()
+        led_G.on()
     else:
         toggle_RGB(LED_OFF)
 
@@ -96,14 +97,18 @@ def set_normal_state():
 while True:
     set_normal_state()
 
+    # Leitura do botão com debounced
     if(button.value() == 0):
-        sleep_ms(100)	# Debounced
-        if(button.value() == 0):
+        # Debounced
+        if(button.value() == 0) and (ticks_ms() - button_time > 100):
+            button_time = ticks_ms()
             state = state + 1
             if state > 4:
-                state = 0
+                state = 0 
             blink_functional()
             print(f'button state: {state}')
+
+
     try:
         diff = ticks_ms() - relogio_bme
         # Obtenção dos parâmetros a cada 10 [s]
@@ -156,26 +161,32 @@ while True:
 
         disp_prob = 0
         led_G.value(LED_ON)
-#         sleep_ms(500)
+
     except OSError as ose:
         set_error_state()
         print(f'OSError: {ose}')
         if(disp_prob == 0):
             devices = i2c.scan()
             print(f'Devices found: {devices}')
-            if(len(devices) == 0 or devices[0] != 60):
+            if(len(devices) == 0 or devices[0] != 119):
+                check_device_alert(119)
+                disp_prob = 2
+            elif(devices[0] != 60):
                 check_device_alert(60)
                 disp_prob = 1
         elif(disp_prob == 1):
             if(ticks_ms() - relogio_led > ERROR_STATE_READ):
                 check_device_alert(60)
                 relogio_led = ticks_ms()
-#         sleep_ms(5000)
+        elif(disp_prob == 2):
+            if(ticks_ms() - relogio_led > ERROR_STATE_READ):
+                check_device_alert(119)
+                relogio_led = ticks_ms()
+
     except KeyboardInterrupt as k:
         sys.exit()
     except BaseException as e:
         print(type(e))
         print(f'Unexpected {e}')
-
 
 
