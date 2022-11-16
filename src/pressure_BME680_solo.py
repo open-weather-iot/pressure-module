@@ -35,7 +35,7 @@ LED_OFF = 1
 # Usaremos I2C 0, GPIO 20 e 21 --> SDA e SCL
 i2c = I2C(0, scl=Pin(21), sda=Pin(20))
 bme = BME680_I2C(i2c=i2c)
-display = ssd1306.SSD1306_I2C(128, 32, i2c)
+# display = ssd1306.SSD1306_I2C(128, 32, i2c)
 
 # Configuração das GPIOs para Botão e Leds
 button = Pin(28, Pin.IN, Pin.PULL_UP)
@@ -118,30 +118,35 @@ while True:
             relogio_bme = ticks_ms()
 
         if(state == 0):
-            display.fill(0)
-            display.text('Pressao: ', 0, 0)
-            display.text(pres, 0, 24)
-            display.show()
+#             display.fill(0)
+#             display.text('Pressao: ', 0, 0)
+#             display.text(pres, 0, 24)
+#             display.show()
+            print(f'Pressao: {pres}')
         elif(state == 1):
-            display.fill(0)
-            display.text('Temperatura: ', 0, 0)
-            display.text(temp, 0, 24)
-            display.show()
+#             display.fill(0)
+#             display.text('Temperatura: ', 0, 0)
+#             display.text(temp, 0, 24)
+#             display.show()
+            print(f'Temperatura: {temp}')
         elif(state == 2):
-            display.fill(0)
-            display.text('Umidade Relativa: ', 0, 0)
-            display.text(hum, 0, 24)
-            display.show()
+#             display.fill(0)
+#             display.text('Umidade Relativa: ', 0, 0)
+#             display.text(hum, 0, 24)
+#             display.show()
+            print(f'Umidade Relativa: {hum}')
         elif(state == 3):
-            display.fill(0)
-            display.text('Altitude: ', 0, 0)
-            display.text(alt, 0, 24)
-            display.show()
+#             display.fill(0)
+#             display.text('Altitude: ', 0, 0)
+#             display.text(alt, 0, 24)
+#             display.show()
+            print(f'Altitude: {alt}')
         elif(state == 4):
-            display.fill(0)
-            display.text('Qualidade do Ar: ', 0, 0)
-            display.text(ar, 0, 24)
-            display.show()
+#             display.fill(0)
+#             display.text('Qualidade do Ar: ', 0, 0)
+#             display.text(ar, 0, 24)
+#             display.show()
+            print(f'Qualidade do Ar: {ar}')
 
         disp_prob = 0
         if disp_prob != 0:
@@ -154,7 +159,7 @@ while True:
         if(disp_prob == 0):
             devices = i2c.scan()
             print(f'Devices found: {devices}')
-            if(devices[0] != 60):
+            if(len(devices) == 0 or devices[0] != 60):
                 check_device_alert(60)
                 disp_prob = 1
         elif(disp_prob == 1):
