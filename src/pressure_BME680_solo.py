@@ -28,8 +28,11 @@ import ssd1306
 # Definição dos valores de on/off para LED RGB:
 # Anodo comum  => on=0, off=1
 # Catodo comum => on=1, off=0
-LED_ON = 0
-LED_OFF = 1
+LED_ON = 1
+LED_OFF = 0
+
+NORMAL_STATE_READ = 10000
+ERROR_STATE_READ = 5000
 
 # Configuração I2C da Pico
 # Usaremos I2C 0, GPIO 20 e 21 --> SDA e SCL
@@ -38,11 +41,10 @@ bme = BME680_I2C(i2c=i2c)
 display = ssd1306.SSD1306_I2C(128, 32, i2c)
 
 # Configuração das GPIOs para Botão e Leds
-button = Pin(28, Pin.IN, Pin.PULL_UP)
-led_builtin = Pin(25, Pin.OUT)
-led_R = Pin(19, Pin.OUT)
+button = Pin(22, Pin.IN, Pin.PULL_UP)
+led_R = Pin(27, Pin.OUT)
 led_G = Pin(18, Pin.OUT)
-led_B = Pin(17, Pin.OUT)
+led_B = Pin(19, Pin.OUT)
 
 # Definindo estado inicial do LED RGB
 led_R.value(LED_OFF)
@@ -54,6 +56,10 @@ state = -1
 disp_prob = 0
 relogio_bme = ticks_ms()
 relogio_led = ticks_ms()
+
+f_temperature = ''
+f_humidity = ''
+f_pressure = ''
 
 def blink_alert():
     led_R.value(LED_OFF)
@@ -101,7 +107,7 @@ while True:
     try:
         diff = ticks_ms() - relogio_bme
         # Obtenção dos parâmetros a cada 10 [s]
-        if(diff > 10000):
+        if(diff > NORMAL_STATE_READ):
             print('reading data')
             blink_functional()
             f_temperature = "%0.1f C" % bme.temperature
@@ -122,37 +128,35 @@ while True:
             display.text('Pressao: ', 0, 0)
             display.text(pres, 0, 24)
             display.show()
-            print(f'Pressao: {pres}')
+#             print(f'Pressao: {f_pressure}')
         elif(state == 1):
             display.fill(0)
             display.text('Temperatura: ', 0, 0)
             display.text(temp, 0, 24)
             display.show()
-            print(f'Temperatura: {temp}')
+#             print(f'Temperatura: {f_temperature}')
         elif(state == 2):
             display.fill(0)
             display.text('Umidade Relativa: ', 0, 0)
             display.text(hum, 0, 24)
             display.show()
-            print(f'Umidade Relativa: {hum}')
+#             print(f'Umidade Relativa: {f_humidity}')
         elif(state == 3):
             display.fill(0)
             display.text('Altitude: ', 0, 0)
             display.text(alt, 0, 24)
             display.show()
-            print(f'Altitude: {alt}')
+#             print(f'Altitude: {alt}')
         elif(state == 4):
             display.fill(0)
             display.text('Qualidade do Ar: ', 0, 0)
             display.text(ar, 0, 24)
             display.show()
-            print(f'Qualidade do Ar: {ar}')
+#             print(f'Qualidade do Ar: {ar}')
 
         disp_prob = 0
-        if disp_prob != 0:
-            check_device_alert(0)
-        led_G.value(0)
-        sleep_ms(500)
+        led_G.value(LED_ON)
+#         sleep_ms(500)
     except OSError as ose:
         set_error_state()
         print(f'OSError: {ose}')
@@ -163,10 +167,10 @@ while True:
                 check_device_alert(60)
                 disp_prob = 1
         elif(disp_prob == 1):
-            if(ticks_ms() - relogio_led > 500):
+            if(ticks_ms() - relogio_led > ERROR_STATE_READ):
                 check_device_alert(60)
                 relogio_led = ticks_ms()
-        sleep_ms(5000)
+#         sleep_ms(5000)
     except KeyboardInterrupt as k:
         sys.exit()
     except BaseException as e:
