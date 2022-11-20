@@ -20,4 +20,4 @@ Para o circuito foram utilizados os seguintes componentes:
 
 **Funcionamento:** O LED RGB informa a cor verde indicando funcionamento normal do sistema. A cada leitura do sensor e pressionamento do botão, o LED pisca.
 O botão serve para alternar a exibição na tela das 5 grandezas exibidas pelo sensor, sendo que inicialmente é exibido primeiro o valor de pressão atmosférica.
-As medições ocorrem a cada 10 segundos. Caso ocorra algum erro com a leitura I2C do sensor, o LED vai alternar para vermelho, piscando a cada 5 segundos. Ao restabelecer a conexão I2C, retorna ao estado normal (verde).
+As medições ocorrem a cada 10 segundos. Caso ocorra algum erro com a leitura I2C do sensor, o LED vai alternar para vermelho, piscando a cada 10 segundos também. Ao restabelecer a conexão I2C, retorna ao estado normal (verde). O fluxo de tratamento do display ficou isolado, portanto em caso de falha, os dados continuam podendo ser exibidos e alternados no display, porém vai exibir o valor da última medição obtida, até que se reestabeleça o sensor novamente.
