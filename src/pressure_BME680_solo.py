@@ -31,8 +31,13 @@ import ssd1306
 LED_ON = 1
 LED_OFF = 0
 
-NORMAL_STATE_READ = 10000
-ERROR_STATE_READ = 5000
+NORMAL_STATE_FREQ_MS = 10000
+ERROR_STATE_FREQ_MS = 5000
+DEBOUNCE_TIME_MS = 107
+
+SENSOR_ADDR = 119
+DISPLAY_ADDR = 60
+IN_ERROR_STATE = False
 
 # Configuração I2C da Pico
 # Usaremos I2C 0, GPIO 20 e 21 --> SDA e SCL
@@ -53,22 +58,26 @@ led_B.value(LED_OFF)
 
 # Variáveis
 state = -1
-disp_prob = 0
 relogio_bme = ticks_ms()
-relogio_led = ticks_ms()
 button_time = ticks_ms()
-
-f_temperature = ''
-f_humidity = ''
-f_pressure = ''
+temp = ''
+hum = ''
+pres = ''
+ar = ''
+alt = ''
 
 def blink_alert():
-    led_R.value(LED_OFF)
+    toggle_RGB(LED_OFF)
     sleep_ms(400)
     led_R.toggle()
 
+def blink_display_disconnected():
+    toggle_RGB(LED_OFF)
+    sleep_ms(400)
+    led_B.toggle()
+
 def blink_functional():
-    led_G.value(LED_OFF)
+    toggle_RGB(LED_OFF)
     sleep_ms(200)
     led_G.toggle()
 
@@ -78,43 +87,58 @@ def toggle_RGB(led_value):
     led_B.value(led_value)
 
 def check_device_alert(device_id):
-    if device_id == 60:
+    if device_id == SENSOR_ADDR:
         blink_alert()
-    elif end == 119:
-        led_R.off()
-        led_G.on()
+    elif device_id == DISPLAY_ADDR:
+        blink_display_disconnected()
     else:
         toggle_RGB(LED_OFF)
 
-def set_error_state():
-    led_G.value(LED_OFF)
-    led_R.value(LED_ON)
-
-def set_normal_state():
-    led_G.value(LED_ON)
-    led_R.value(LED_OFF)
-
-while True:
-    set_normal_state()
-
+while True:    
     # Leitura do botão com debounced
     if(button.value() == 0):
         # Debounced
-        if(button.value() == 0) and (ticks_ms() - button_time > 100):
+        if(button.value() == 0) and (ticks_ms() - button_time > DEBOUNCE_TIME_MS):
             button_time = ticks_ms()
             state = state + 1
             if state > 4:
-                state = 0 
-            blink_functional()
+                state = 0
+            if not IN_ERROR_STATE:
+                blink_functional()
             print(f'button state: {state}')
 
-
+    if(state == 0):
+        display.fill(0)
+        display.text('Pressao: ', 0, 0)
+        display.text(pres, 0, 24)
+#         display.show()
+#             print(f'Pressao: {f_pressure}')
+    elif(state == 1):
+        display.fill(0)
+        display.text('Temperatura: ', 0, 0)
+        display.text(temp, 0, 24)
+#             print(f'Temperatura: {f_temperature}')
+    elif(state == 2):
+        display.fill(0)
+        display.text('Umidade Relativa: ', 0, 0)
+        display.text(hum, 0, 24)
+#             print(f'Umidade Relativa: {f_humidity}')
+    elif(state == 3):
+        display.fill(0)
+        display.text('Altitude: ', 0, 0)
+        display.text(alt, 0, 24)
+#             print(f'Altitude: {alt}')
+    elif(state == 4):
+        display.fill(0)
+        display.text('Qualidade do Ar: ', 0, 0)
+        display.text(ar, 0, 24)
+#             print(f'Qualidade do Ar: {ar}')
     try:
-        diff = ticks_ms() - relogio_bme
+        display.show()
         # Obtenção dos parâmetros a cada 10 [s]
-        if(diff > NORMAL_STATE_READ):
+        if((ticks_ms() - relogio_bme) > NORMAL_STATE_FREQ_MS):
+#             print('error state: ' + str(IN_ERROR_STATE))
             print('reading data')
-            blink_functional()
             f_temperature = "%0.1f C" % bme.temperature
             f_humidity = "%0.1f %%" % bme.humidity
             f_pressure = "%0.3f hPa" % bme.pressure
@@ -126,63 +150,31 @@ while True:
             print(f'Pressão: {f_pressure}\n')
             ar = str(round(bme.gas/1000, 2)) + ' KOhms'
             alt = str(round(bme.altitude, 2)) + ' m'
+            
             relogio_bme = ticks_ms()
 
-        if(state == 0):
-            display.fill(0)
-            display.text('Pressao: ', 0, 0)
-            display.text(pres, 0, 24)
-            display.show()
-#             print(f'Pressao: {f_pressure}')
-        elif(state == 1):
-            display.fill(0)
-            display.text('Temperatura: ', 0, 0)
-            display.text(temp, 0, 24)
-            display.show()
-#             print(f'Temperatura: {f_temperature}')
-        elif(state == 2):
-            display.fill(0)
-            display.text('Umidade Relativa: ', 0, 0)
-            display.text(hum, 0, 24)
-            display.show()
-#             print(f'Umidade Relativa: {f_humidity}')
-        elif(state == 3):
-            display.fill(0)
-            display.text('Altitude: ', 0, 0)
-            display.text(alt, 0, 24)
-            display.show()
-#             print(f'Altitude: {alt}')
-        elif(state == 4):
-            display.fill(0)
-            display.text('Qualidade do Ar: ', 0, 0)
-            display.text(ar, 0, 24)
-            display.show()
-#             print(f'Qualidade do Ar: {ar}')
-
-        disp_prob = 0
-        led_G.value(LED_ON)
-
+            IN_ERROR_STATE = False
+            blink_functional()
+#             print('\n----END OF FLOW----\n')
     except OSError as ose:
-        set_error_state()
-        print(f'OSError: {ose}')
-        if(disp_prob == 0):
-            devices = i2c.scan()
-            print(f'Devices found: {devices}')
-            if(len(devices) == 0 or devices[0] != 119):
-                check_device_alert(119)
-                disp_prob = 2
-            elif(devices[0] != 60):
-                check_device_alert(60)
-                disp_prob = 1
-        elif(disp_prob == 1):
-            if(ticks_ms() - relogio_led > ERROR_STATE_READ):
-                check_device_alert(60)
-                relogio_led = ticks_ms()
-        elif(disp_prob == 2):
-            if(ticks_ms() - relogio_led > ERROR_STATE_READ):
-                check_device_alert(119)
-                relogio_led = ticks_ms()
-
+#         print('\n----ERROR INIT----\n')        
+        IN_ERROR_STATE = True
+        
+        print(f'\nOSError: {ose}')
+        devices = i2c.scan()
+        print(f'Devices found: {devices}')
+        if (len(devices) == 0):
+            blink_alert()
+        elif SENSOR_ADDR not in devices:
+            print('sensor disconnected')
+            check_device_alert(SENSOR_ADDR)
+        elif DISPLAY_ADDR not in devices:
+            print('display disconnected')
+            check_device_alert(DISPLAY_ADDR)
+                
+        relogio_bme = ticks_ms()        
+#         print('error state: ' + str(IN_ERROR_STATE))
+#         print('\n----ERROR END----\n')
     except KeyboardInterrupt as k:
         sys.exit()
     except BaseException as e:
